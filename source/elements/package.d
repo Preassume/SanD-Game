@@ -7,7 +7,7 @@ public import elements.water;
 public import elements.wood;
 public import elements.fire;
 
-static const string[] elementNames = [
+enum elementNames = [
 	"air",
 	"sand",
 	"water",
