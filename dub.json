@@ -1,0 +1,14 @@
+
+{
+	"authors": [
+		"Austin Riddle"
+	],
+	"copyright": "Copyright © 2021, Austin Riddle",
+	"dependencies": {
+		"dray": "~>3.5.0-r4"
+	},
+	"libs": [ "raylib" ],
+	"description": "A simple falling sand game",
+	"license": "GPLv3",
+	"name": "dsand"
+}
