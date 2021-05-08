@@ -14,6 +14,7 @@ class wood : element{
 		density = 1000;
 	}
 	
+	// Check how many of this element's neighbors are fire
 	int checkFire(ref element*[] neighbors){
 		auto count = 0;
 		foreach(n; neighbors){

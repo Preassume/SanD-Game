@@ -16,6 +16,7 @@ class fire : element{
 		lifespan = uniform!"[]"(8, 16, rnd);
 	}
 	
+	// Get neighbor directly above this element if possible
 	element* getUp(ref element*[] neighbors){
 		foreach(n; neighbors){
 			if(n.x == this.x && n.y < this.y && n.density == 0) return n;
@@ -23,6 +24,7 @@ class fire : element{
 		return null;
 	}
 	
+	// Get neighbors diagonally upwards if possible
 	element*[] getMovesUp(ref element*[] neighbors){
 		element*[] checkArray = null;
 		foreach(n; neighbors){
@@ -32,6 +34,7 @@ class fire : element{
 		return checkArray;
 	}
 	
+	// Get neighbors to the left or right if possible
 	element*[] getMovesSide(ref element*[] neighbors){
 		element*[] checkArray = null;
 		foreach(n; neighbors){
