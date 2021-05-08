@@ -20,11 +20,3 @@ class air : element{
 		return this;
 	}
 }
-
-class nullElement : air{
-	this(){
-		super(0, 0, 0);
-		hoverColor = Colors.BLACK;
-		neutralColor = Colors.BLACK;
-	}
-}
