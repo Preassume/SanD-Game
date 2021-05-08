@@ -1,11 +1,11 @@
-module elements.water;
+module elements.wacky;
 
 import std.stdio;
 import std.random;
 import raylib;
 import elements;
 
-class water : sand{	
+class wacky : sand{
 	this(float x, float y, float size){
 		super(x, y, size);
 		
@@ -30,23 +30,13 @@ class water : sand{
 		return checkArr;
 	}
 	
-	// Basic falling water rule
 	override element update(element*[] neighbors){
-		hasUpdated = true;
+		super.update(neighbors);
 		
-		auto down = getDown(neighbors);
-		if(down) return swapElements!water(down);
-		
-		auto checkArr = getMoves(neighbors);
-		
-		foreach(n; checkArr){
-			return swapElements!water(checkArr[uniform!"[)"(0, checkArr.length, rnd)]);
-		}
-		
-		checkArr = getSideMoves(neighbors);
+		element*[] checkArr = getSideMoves(neighbors);
 		if(checkArr == null) return this;
 		
 		auto i = uniform!"[)"(0, checkArr.length, rnd);
-		return swapElements!water(checkArr[i]);
+		return swapElements!wacky(checkArr[i]);
 	}
 }
