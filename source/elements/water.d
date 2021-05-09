@@ -5,48 +5,44 @@ import std.random;
 import raylib;
 import elements;
 
-class water : sand{	
+class water : element{
 	this(float x, float y, float size){
 		super(x, y, size);
 		
-		hoverColor = Colors.SKYBLUE;
-		neutralColor = Colors.BLUE;
+		color = Colors.BLUE;
 		
 		density = 1;
 	}
 	
-	// Get the two neighbors to either side of this element, but only if they're less dense
-	element*[] getSideMoves(ref element*[] neighbors){
-		element*[] checkArr = null;
-		
-		foreach(n; neighbors){
-			if(n.x < this.x && n.y == this.y && n.density < this.density){
-				checkArr ~= n;
-			}
-			if(n.x > this.x && n.y == this.y && n.density < this.density){
-				checkArr ~= n;
-			}
-		}
-		return checkArr;
+	this(float x, float y, float size, element*[3][3] neighbors){
+		this(x, y, size);
+		this.neighbors = neighbors;
 	}
 	
-	// Basic falling water rule
-	override element update(element*[] neighbors){
+	// Basic water rule
+	override element update(){
 		hasUpdated = true;
 		
-		auto down = getDown(neighbors);
-		if(down) return swapElements!water(down);
-		
-		auto checkArr = getMoves(neighbors);
-		
-		foreach(n; checkArr){
-			return swapElements!water(checkArr[uniform!"[)"(0, checkArr.length, rnd)]);
+		if(neighbors[1][2].density < density) return swapElements!water(neighbors[1][2]);
+		else if(neighbors[0][2].density < density && neighbors[2][2].density < density){
+			auto i = (uniform!"[]"(0, 1, rnd)) * 2;
+			return swapElements!water(neighbors[i][2]);
+		} 
+		else if(neighbors[0][2].density < density) return swapElements!water(neighbors[0][2]);
+		else if(neighbors[2][2].density < density) return swapElements!water(neighbors[2][2]);
+		else if(neighbors[0][1].density < density && neighbors[2][1].density < density){
+			auto i = uniform!"[]"(0, 2, rnd);
+			if(i == 1) return this;
+			return swapElements!water(neighbors[i][1]);
+		} 
+		else if(neighbors[0][1].density < density){
+			if(uniform!"[]"(0, 1, rnd) == 1) return this;
+			return swapElements!water(neighbors[0][1]);
 		}
-		
-		checkArr = getSideMoves(neighbors);
-		if(checkArr == null) return this;
-		
-		auto i = uniform!"[)"(0, checkArr.length, rnd);
-		return swapElements!water(checkArr[i]);
+		else if(neighbors[2][1].density < density){
+			if(uniform!"[]"(0, 1, rnd) == 1) return this;
+			return swapElements!water(neighbors[2][1]);
+		}
+		return this;
 	}
 }

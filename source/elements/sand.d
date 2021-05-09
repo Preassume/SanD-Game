@@ -9,47 +9,27 @@ class sand : element{
 	this(float x, float y, float size){
 		super(x, y, size);
 		
-		hoverColor = Colors.WHITE;
-		neutralColor = Colors.LIGHTGRAY;
+		color = Colors.BEIGE;
 		
 		density = 2;
 	}
 	
-	// Get the neighbor immediately below this element
-	element* getDown(ref element*[] neighbors){
-		foreach(n; neighbors){
-			if(n.x == this.x && n.y > this.y && n.density < this.density) return n;
-		}
-		return null;
-	}
-	
-	// Get the neighbors which are below this element (have a greater y value)
-	element*[] getMoves(ref element*[] neighbors){
-		element*[] checkArr = null;
-		
-		foreach(n; neighbors){
-			if(n.x < this.x && n.y > this.y && n.density < this.density){
-				checkArr ~= n;
-			}
-			else if(n.x > this.x && n.y > this.y && n.density < this.density){
-				checkArr ~= n;
-			}
-		}
-		return checkArr;
+	this(float x, float y, float size, element*[3][3] neighbors){
+		this(x, y, size);
+		this.neighbors = neighbors;
 	}
 	
 	// Basic falling sand rule
-	override element update(element*[] neighbors){
+	override element update(){
 		hasUpdated = true;
 		
-		auto down = getDown(neighbors);
-		if(down) return swapElements!sand(down);
-		
-		auto checkArr = getMoves(neighbors);
-		
-		foreach(n; checkArr){
-			return swapElements!sand(checkArr[uniform!"[)"(0, checkArr.length, rnd)]);
-		}
-		return this;
+		if(neighbors[1][2].density < density) return swapElements!sand(neighbors[1][2]);
+		else if(neighbors[0][2].density < density && neighbors[2][2].density < density){
+			auto i = (uniform!"[]"(0, 1, rnd)) * 2;
+			return swapElements!sand(neighbors[i][2]);
+		} 
+		else if(neighbors[0][2].density < density) return swapElements!sand(neighbors[0][2]);
+		else if(neighbors[2][2].density < density) return swapElements!sand(neighbors[2][2]);
+		else return this;
 	}
 }

@@ -2,6 +2,7 @@ module elements.element;
 
 import std.stdio;
 import std.random;
+import std.conv;
 import raylib;
 
 auto rnd = Random(1);
@@ -10,9 +11,10 @@ auto rnd = Random(1);
 class element{
 	bool hasUpdated = false;
 	int density, lifespan;
-	Color hoverColor, neutralColor; // Set these in subclasses so they will be visible
+	Color color; // Set these in subclasses so they will be visible
 	Rectangle rec;
 	typeof(typeid(element)) elementType;
+	element*[3][3] neighbors;
 	
 	@property float x() { return rec.x; }
 	@property void x(float newX) { rec.x = newX; }
@@ -23,9 +25,6 @@ class element{
 	@property float size() { return rec.w; }
 	@property void size(float newSize) { rec.w = rec.h = newSize; }
 	
-	@property bool Pressed() { return (IsMouseButtonDown(MouseButton.MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), rec)); }
-	@property bool Hovering() { return (IsMouseButtonUp(MouseButton.MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), rec)); }
-	
 	this(float x, float y, float size){
 		rec.x = x;
 		rec.y = y;
@@ -34,15 +33,23 @@ class element{
 		elementType = typeid(this);
 	}
 	
+	this(float x, float y, float size, element*[3][3] neighbors){
+		this(x, y, size);
+		this.neighbors = neighbors;
+	}
+	
 	// New elements must have an update method
-	abstract element update(element*[] neighbors);
+	abstract element update();
 	
 	// Swap a specified element type (T) with one given (e)
-	protected element swapElements(T)(element* e){
+	protected element swapElements(T)(ref element* e){
+		if(typeid(T) == typeid(dummy)) return *e;
+		
 		element tmp = *e;
 		tmp.lifespan = e.lifespan;
 		
-		*e = new T(e.x, e.y, e.size);
+		*e = new T(e.x, e.y, e.size, e.neighbors);
+		
 		e.hasUpdated = true;
 		e.lifespan = this.lifespan;
 		
@@ -54,7 +61,18 @@ class element{
 	
 	// New elements can override draw, but it's not necessary.
 	void draw(){
-		if(Hovering) DrawRectangleRec(rec, hoverColor);
-		else DrawRectangleRec(rec, neutralColor);
+		DrawRectangleRec(rec, color);
 	}
+}
+
+// A dummy element to be used for out-of-bounds cases
+class dummy : element{
+	this(float x, float y, float size){ super(x, y, size); }
+	
+	override element update(){
+		density = 999999;
+		hasUpdated = true;
+		return this;
+	}
+	override void draw(){return;}
 }

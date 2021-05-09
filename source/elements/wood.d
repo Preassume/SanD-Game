@@ -1,5 +1,6 @@
 module elements.wood;
 
+import std.stdio;
 import std.random;
 import raylib;
 import elements;
@@ -8,30 +9,19 @@ class wood : element{
 	this(float x, float y, float size){
 		super(x, y, size);
 		
-		hoverColor = Colors.YELLOW;
-		neutralColor = Colors.GOLD;
+		color = Colors.GOLD;
 		
-		density = 1000;
+		density = 10;
 	}
 	
-	// Check how many of this element's neighbors are fire
-	int checkFire(ref element*[] neighbors){
-		auto count = 0;
-		foreach(n; neighbors){
-			if(n.elementType == typeid(fire)) count++;
-		}
-		return count;
+	this(float x, float y, float size, element*[3][3] neighbors){
+		this(x, y, size);
+		this.neighbors = neighbors;
 	}
 	
-	override element update(element*[] neighbors){
+	// Does basically nothing
+	override element update(){
 		hasUpdated = true;
-		int fireNeighbors = checkFire(neighbors);
-		if(fireNeighbors > 0){
-			auto i = uniform!"[]"(1, 8, rnd);
-			if(i < fireNeighbors){
-				return new fire(this.x, this.y, this.size);
-			}
-		}
 		return this;
 	}
 }
