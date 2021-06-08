@@ -1,78 +1,99 @@
 module elements.element;
 
+import grid;
 import std.stdio;
 import std.random;
+import std.array;
 import std.conv;
 import raylib;
 
 auto rnd = Random(1);
 
 // An abstract base element class for further elements to inherit from
-class element{
+// This class contains much of the methods required to easily implement new elements
+class element : elementGrid{
 	bool hasUpdated = false;
-	int density, lifespan;
-	Color color; // Set these in subclasses so they will be visible
-	Rectangle rec;
-	typeof(typeid(element)) elementType;
-	element*[3][3] neighbors;
 	
-	@property float x() { return rec.x; }
-	@property void x(float newX) { rec.x = newX; }
+	// Set these in the constructors of child classes
+	int density;
 	
-	@property float y() { return rec.y; }
-	@property void y(float newY) { rec.y = newY; }
+	// These can be set with constructor parameters
+	int x, y, lifespan;
 	
-	@property float size() { return rec.w; }
-	@property void size(float newSize) { rec.w = rec.h = newSize; }
+	@property string type(){return split(to!string(this), ".")[2];}
 	
-	this(float x, float y, float size){
-		rec.x = x;
-		rec.y = y;
-		rec.w = rec.h = size;
-		
-		elementType = typeid(this);
+	// New elements must set their color
+	@property abstract enum Color color();
+	
+	
+	// These properties are handy ways to interact with your neighbors
+	@property element* Up(){
+		if(y-1 >= 0) return &grid[x][y-1];
+		else return null;
+	}
+	@property element* Dn(){
+		if(y+1 < height) return &grid[x][y+1];
+		else return null;
+	}
+	@property element* L(){
+		if(x-1 >= 0) return &grid[x-1][y];
+		else return null;
+	}
+	@property element* R(){
+		if(x+1 < width) return &grid[x+1][y];
+		else return null;
+	}
+	@property element* UpL(){
+		if(y-1 >= 0 && x-1 >= 0) return &grid[x-1][y-1];
+		else return null;
+	}
+	@property element* DnL(){
+		if(y+1 < height && x-1 >= 0) return &grid[x-1][y+1];
+		else return null;
+	}
+	@property element* UpR(){
+		if(y-1 >= 0 && x+1 < width) return &grid[x+1][y-1];
+		else return null;
+	}
+	@property element* DnR(){
+		if(y+1 < height && x+1 < width) return &grid[x+1][y+1];
+		else return null;
 	}
 	
-	this(float x, float y, float size, element*[3][3] neighbors){
-		this(x, y, size);
-		this.neighbors = neighbors;
+	this(){}
+	
+	this(int x, int y){
+		this.x = x;
+		this.y = y;
 	}
 	
-	// New elements must have an update method
-	abstract element update();
+	// Check if movement is possible with a specified element
+	bool canMove(element* e){
+		if(e == null) return false;
+		if(e.density >= density) return false;
+		return true;
+	}
 	
-	// Swap a specified element type (T) with one given (e)
-	protected element swapElements(T)(ref element* e){
-		if(typeid(T) == typeid(dummy)) return *e;
+	// Move an element to your position, placing an element of type T in its place
+	element move(T)(element* e){
+		if(!canMove(e)) return this;
 		
 		element tmp = *e;
 		tmp.lifespan = e.lifespan;
 		
-		*e = new T(e.x, e.y, e.size, e.neighbors);
-		
+		*e = new T(e.x, e.y);
 		e.hasUpdated = true;
 		e.lifespan = this.lifespan;
 		
 		tmp.x = this.x;
 		tmp.y = this.y;
-		tmp.size = this.size;
 		return tmp;
 	}
 	
-	// New elements can override draw, but it's not necessary.
 	void draw(){
-		DrawRectangleRec(rec, color);
+		DrawPixel(x, y, color);
 	}
-}
-
-// A dummy element to be used for out-of-bounds cases
-class dummy : element{
-	this(float x, float y, float size){ super(x, y, size); }
 	
-	override element update(){
-		density = 999999;
-		hasUpdated = true;
-		return this;
-	}
-	override void draw(){return;}
+	// New elements must have an update method
+	abstract element update();
 }

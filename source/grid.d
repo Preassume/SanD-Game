@@ -6,95 +6,35 @@ import std.conv;
 import raylib;
 
 class elementGrid{
-	private element[][] grid;
-	private element dummyElement = new dummy(0, 0, 0);
-	private int width, height, size, dotCount;
+	// The 2D array of elements is static so that it can be accessed from all elements
+	static element[][] grid;
+	
+	// The same goes for the width, height, and dot count
+	static int width, height, dotCount;
+	
+	// Brush stuff
 	private string brushType = "sand";
-	Rectangle pos;
-	int counter = 0;
+	private string brushTypeAlt = "air";
+	int brushSize = 4;
+	
+	// Determines update order
+	bool updateDir = false;
 	
 	@property void Brush(string s){ brushType = s; }
+	@property void BrushAlt(string s){ brushTypeAlt = s; }
 	
-	@property int MouseX(){ return cast(int)(GetMouseX / size); }
-	@property int MouseY(){ return cast(int)((GetMouseY - pos.y) / size); }
+	this(){}
 	
-	@property int DotCount(){ return dotCount; }
-	
-	@property string GetType(){
-		if(!CheckCollisionPointRec(GetMousePosition(), pos)) return " ";
-		else{
-			string name = to!string(grid[MouseX][MouseY].elementType)[8 .. $];
-			name = name[(name.length / 2) + 1 .. $];
-			return name;
-		}
-	}
-	
-	this(Vector2 pos, int width, int height, int size){
+	this(int width, int height){
 		this.width = width;
 		this.height = height;
-		this.size = size;
-		this.pos.x = pos.x;
-		this.pos.y = pos.y;
-		this.pos.w = (width * size) - 1;
-		this.pos.h = (height * size) - 1;
 		
 		grid = new element[][](width, height);
 		foreach(y; 0 .. height){
 			foreach(x; 0 .. width){
-				grid[x][y] = new air(x * size + pos.x, y * size + pos.y, size);
+				grid[x][y] = new air(x, y);
 			}
 		}
-		foreach(y; 0 .. height){
-			foreach(x; 0 .. width){
-				grid[x][y].neighbors = getNeighbors(x, y);
-			}
-		}
-	}
-	
-	// Resize the elements in the grid
-	void resize(float size){
-		this.size = cast(int)size;
-		this.pos.w = (width * size) - 1;
-		this.pos.h = (height * size) - 1;
-		foreach(y; 0 .. height){
-			foreach(x; 0 .. width){
-				grid[x][y].size = size;
-				grid[x][y].x = x * size;
-				grid[x][y].y = y * size + pos.y;
-			}
-		}
-	}
-	
-	// Get pointers for the surrounding neighbors of an element
-	element*[3][3] getNeighbors(int x, int y){
-		element*[3][3] neighbors = null;
-		
-		foreach(j; 0 .. 3){
-			foreach(i; 0 .. 3){
-				if(x+(i-1) < 0 || x+(i-1) >= width || y+(j-1) < 0 || y+(j-1) >= height){
-					neighbors[i][j] = &dummyElement;
-				}
-				else{
-					neighbors[i][j] = &grid[x+(i-1)][y+(j-1)];
-				}
-			}
-		}
-		return neighbors;
-	}
-	
-	// Return an array of pointers to neighboring elements
-	private element*[] getNeighborsOld(int X, int Y){
-		element*[] neighbors;
-		foreach(y; -1 .. 2){
-			foreach(x; -1 .. 2){
-				if(!(x == 0 && y == 0)){
-					if(X+x >= 0 && X+x <= width-1 && Y+y >= 0 && Y+y <= height-1){
-						neighbors ~= &grid[X+x][Y+y];
-					}
-				}
-			}
-		}
-		return neighbors;
 	}
 	
 	// Set all elements' hasUpdated value to false so they can be updated
@@ -110,54 +50,122 @@ class elementGrid{
 	void reset(){
 		foreach(y; 0 .. height){
 			foreach(x; 0 .. width){
-				grid[x][y] = new air(grid[x][y].x, grid[x][y].y, grid[x][y].size, grid[x][y].neighbors);
+				grid[x][y] = new air(grid[x][y].x, grid[x][y].y);
 			}
 		}
 	}
 	
-	// Apply rules to every element on the grid
-	void update(){
-		preUpdate();
-		foreach(y; 0 .. height){
-			foreach(x; 0 .. width){
-				if(grid[x][y].hasUpdated == false){
-					element*[3][3] tmp = grid[x][y].neighbors;
-					grid[x][y] = grid[x][y].update();
-					grid[x][y].neighbors = tmp;
+	string getType(int x, int y){
+		if(x >= width || x < 0) return "";
+		if(y >= height || y < 0) return "";
+		return grid[x][y].type;
+	}
+	
+	// Update a single dot
+	void updateDot(ref int x, ref int y){
+		if(grid[x][y].hasUpdated == false){
+			grid[x][y] = grid[x][y].update();
+		}
+	}
+	
+	// Apply rules to every element on the grid. Updates twice every time it's called
+	void updateGridFast(){
+		if(updateDir){
+			preUpdate();
+			foreach(y; 0 .. height ){
+				foreach(x; 0 .. width){
+					updateDot(x, y);
+				}
+			}
+			preUpdate();
+			foreach_reverse(y; 0 .. height ){
+				foreach_reverse(x; 0 .. width){
+					updateDot(x, y);
 				}
 			}
 		}
+		else{
+			preUpdate();
+			foreach(y; 0 .. height ){
+				foreach_reverse(x; 0 .. width){
+					updateDot(x, y);
+				}
+			}
+			preUpdate();
+			foreach_reverse(y; 0 .. height ){
+				foreach(x; 0 .. width){
+					updateDot(x, y);
+				}
+			}
+		}
+		updateDir = !updateDir;
+	}
+	
+	// Apply rules to every element on the grid
+	void updateGrid(){
+		preUpdate();
+		if(updateDir){
+			foreach(y; 0 .. height ){
+				foreach(x; 0 .. width){
+					updateDot(x, y);
+				}
+			}
+		}
+		else{
+			foreach(y; 0 .. height ){
+				foreach_reverse(x; 0 .. width){
+					updateDot(x, y);
+				}
+			}
+		}
+		updateDir = !updateDir;
 	}
 	
 	// Place selected element at specified coordinates
-	void putElement(int x, int y){
-		brushSwitch : switch(brushType){
+	void putElement(int x, int y, string brush){
+		brushSwitch : switch(brush){
 			static foreach(s; elementNames){
-				case s: grid[x][y] = new mixin(s)(grid[x][y].x, grid[x][y].y, grid[x][y].size, grid[x][y].neighbors); break brushSwitch;
+				case s: grid[x][y] = new mixin(s)(grid[x][y].x, grid[x][y].y); break brushSwitch;
 			}
 			default: break brushSwitch;
 		}
 	}
 	
-	// Handle mouse clicks
-	void checkMouse(){
-		if(!IsMouseButtonDown(MouseButton.MOUSE_LEFT_BUTTON)) return;
-		if(!CheckCollisionPointRec(GetMousePosition(), pos)) return;
-				
-		putElement(MouseX, MouseY);
+	// Place elements within the brush boundaries
+	void doBrush(int x, int y){
+		if(x >= width) return;
+		int xBound = x - (brushSize / 2);
+		int yBound = y - (brushSize / 2);
+		
+		foreach(Y; yBound .. yBound + brushSize){
+			foreach(X; xBound .. xBound + brushSize){
+				if(X >= 0 && X < width && Y >= 0 && Y < height)
+					if(typeid(grid[X][Y]) == typeid(air) || brushType == "air") putElement(X, Y, brushType);
+			}
+		}
 	}
 	
-	// Draw the grid
-	void draw(){
+	// Place elements within the brush boundaries using alt brush
+	void doBrushAlt(int x, int y){
+		if(x >= width) return;
+		int xBound = x - (brushSize / 2);
+		int yBound = y - (brushSize / 2);
+		
+		foreach(Y; yBound .. yBound + brushSize){
+			foreach(X; xBound .. xBound + brushSize){
+				if(X >= 0 && X < width && Y >= 0 && Y < height)
+					if(typeid(grid[X][Y]) == typeid(air) || brushTypeAlt == "air") putElement(X, Y, brushTypeAlt);
+			}
+		}
+	}
+	
+	// Draw the grid on a texture
+	void drawGrid(){
 		dotCount = 0;
-		checkMouse();
 		foreach(y; 0 .. height){
 			foreach(x; 0 .. width){
-				if(grid[x][y].elementType == typeid(dummy)){ // Temporary "fix" for a bug
-					grid[x][y] = new air(grid[x][y].x, grid[x][y].y, grid[x][y].size, grid[x][y].neighbors);
-				}
 				grid[x][y].draw();
-				if(grid[x][y].elementType != typeid(air)) dotCount++;
+				if(typeid(grid[x][y]) != typeid(air)) dotCount++;
 			}
 		}
 	}
