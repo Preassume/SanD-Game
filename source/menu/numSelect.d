@@ -13,6 +13,13 @@ class NumSelect{
 	Rectangle rec;
 	
 	@property int Value(){ return num; }
+	@property int Value(int n){
+		if(n < min) n = min;
+		else if(n > max) n = max;
+		else num = n;
+		return num;
+	}
+	
 	@property bool Pressed() { return (IsMouseButtonPressed(MouseButton.MOUSE_LEFT_BUTTON) && CheckCollisionPointRec(GetMousePosition(), rec)); }
 	
 	this(int min, int max, Vector2 pos, float size){
@@ -25,6 +32,21 @@ class NumSelect{
 		this.max = max;
 		this.size = size;
 		this.pos = pos;
+	}
+	
+	this(int min, int max, Vector2 pos, float size, int value){
+		this(min, max, pos, size);
+		num = value;
+	}
+	
+	void resize(Vector2 pos, int size){
+		this.size = size;
+		this.pos = pos;
+		
+		plus.Rec = Rectangle(pos.x, pos.y, size / 3, size / 2);
+		minus.Rec = Rectangle(pos.x, pos.y + size / 2, size / 3, size / 2);
+		
+		rec = Rectangle(pos.x, pos.y, plus.w, plus.h + minus.h);
 	}
 	
 	void increment(){
