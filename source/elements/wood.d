@@ -5,23 +5,20 @@ import std.random;
 import raylib;
 import elements;
 
+// Does not move or do anything, it's just heavy.
 class wood : element{
-	this(float x, float y, float size){
-		super(x, y, size);
+	
+	@property override enum Color color() { return Colors.GOLD; }
+	
+	this(int x, int y){
+		super(x, y);
 		
-		color = Colors.GOLD;
-		
-		density = 10;
+		density = 1000;
 	}
 	
-	this(float x, float y, float size, element*[3][3] neighbors){
-		this(x, y, size);
-		this.neighbors = neighbors;
-	}
-	
-	// Does basically nothing
 	override element update(){
 		hasUpdated = true;
+		
 		return this;
 	}
 }

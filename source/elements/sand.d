@@ -6,30 +6,31 @@ import raylib;
 import elements;
 
 class sand : element{
-	this(float x, float y, float size){
-		super(x, y, size);
+	
+	@property override enum Color color() { return Colors.BEIGE; }
+	
+	this(int x, int y){
+		super(x, y);
 		
-		color = Colors.BEIGE;
-		
-		density = 2;
+		density = 20;
 	}
 	
-	this(float x, float y, float size, element*[3][3] neighbors){
-		this(x, y, size);
-		this.neighbors = neighbors;
-	}
-	
-	// Basic falling sand rule
+	// Simple falling sand rule
 	override element update(){
 		hasUpdated = true;
 		
-		if(neighbors[1][2].density < density) return swapElements!sand(neighbors[1][2]);
-		else if(neighbors[0][2].density < density && neighbors[2][2].density < density){
-			auto i = (uniform!"[]"(0, 1, rnd)) * 2;
-			return swapElements!sand(neighbors[i][2]);
-		} 
-		else if(neighbors[0][2].density < density) return swapElements!sand(neighbors[0][2]);
-		else if(neighbors[2][2].density < density) return swapElements!sand(neighbors[2][2]);
-		else return this;
+		if(canMove(Dn)) return move!sand(Dn);
+		
+		auto i = uniform!"[]"(0, 1, rnd);
+		if(i == 1){
+			if(canMove(DnL)) return move!sand(DnL);
+			if(canMove(DnR)) return move!sand(DnR);
+		}
+		else{
+			if(canMove(DnR)) return move!sand(DnR);
+			if(canMove(DnL)) return move!sand(DnL);
+		}
+		
+		return this;
 	}
 }

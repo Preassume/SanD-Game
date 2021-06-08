@@ -6,43 +6,71 @@ import raylib;
 import elements;
 
 class water : element{
-	this(float x, float y, float size){
-		super(x, y, size);
+	
+	@property override enum Color color() { return Colors.BLUE; }
+	
+	this(int x, int y){
+		super(x, y);
 		
-		color = Colors.BLUE;
-		
-		density = 1;
+		density = 10;
 	}
 	
-	this(float x, float y, float size, element*[3][3] neighbors){
-		this(x, y, size);
-		this.neighbors = neighbors;
+	// Wetting is currently only used to grow plant
+	bool canWet(element* e){
+		if(e == null) return false;
+		auto i = uniform!"[]"(0, 6, rnd);
+		if(i != 0) return false;
+		if(typeid(*e) == typeid(plant)) return true;
+		return false;
 	}
 	
-	// Basic water rule
+	element wet(element* e){
+		if(e == null) return this;
+		if(typeid(*e) == typeid(plant)) return wet!plant(e);
+		return this;
+	}
+	
+	element wet(T)(element* e){
+		if(!canWet(e)) return this;
+		
+		*e = new T(e.x, e.y);
+		e.hasUpdated = true;
+		
+		return new T(x, y);
+	}
+	
+	// Similar to sand, but with additional left and right movement to emulate flowing
 	override element update(){
 		hasUpdated = true;
 		
-		if(neighbors[1][2].density < density) return swapElements!water(neighbors[1][2]);
-		else if(neighbors[0][2].density < density && neighbors[2][2].density < density){
-			auto i = (uniform!"[]"(0, 1, rnd)) * 2;
-			return swapElements!water(neighbors[i][2]);
-		} 
-		else if(neighbors[0][2].density < density) return swapElements!water(neighbors[0][2]);
-		else if(neighbors[2][2].density < density) return swapElements!water(neighbors[2][2]);
-		else if(neighbors[0][1].density < density && neighbors[2][1].density < density){
-			auto i = uniform!"[]"(0, 2, rnd);
-			if(i == 1) return this;
-			return swapElements!water(neighbors[i][1]);
-		} 
-		else if(neighbors[0][1].density < density){
-			if(uniform!"[]"(0, 1, rnd) == 1) return this;
-			return swapElements!water(neighbors[0][1]);
+		auto wetDir = randomShuffle([Dn, DnR, DnL]);
+		foreach(e; wetDir){
+			if(canWet(e)) return wet(e);
 		}
-		else if(neighbors[2][1].density < density){
-			if(uniform!"[]"(0, 1, rnd) == 1) return this;
-			return swapElements!water(neighbors[2][1]);
+		
+		if(canMove(Dn)) return move!water(Dn);
+		
+		auto i = uniform!"[]"(0, 2, rnd);
+		if(i == 1){
+			if(canMove(DnL)) return move!water(DnL);
+			if(canMove(DnR)) return move!water(DnR);
 		}
+		else if(i == 0){
+			if(canMove(DnR)) return move!water(DnR);
+			if(canMove(DnL)) return move!water(DnL);
+		}
+		
+		if(i == 2) return this;
+		
+		if(i == 1){
+			if(canMove(L)) return move!water(L);
+			if(canMove(R)) return move!water(R);
+		}
+		else{
+			if(canMove(R)) return move!water(R);
+			if(canMove(L)) return move!water(L);
+		}
+		
 		return this;
 	}
 }
